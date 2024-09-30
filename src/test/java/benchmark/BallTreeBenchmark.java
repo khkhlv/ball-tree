@@ -1,5 +1,6 @@
 package benchmark;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
 import org.openjdk.jmh.annotations.*;
@@ -7,13 +8,17 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.khkhlv.balltree.BallTree;
+import ru.khkhlv.balltree.Knn;
 import ru.khkhlv.balltree.Node;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +44,9 @@ public class BallTreeBenchmark {
     private RealVector target;
     private BallTree ballTree;
     private Node root;
+    private List<RealVector> kActualNeighbours;
+    private List<RealVector> foundNeighbours;
+    private static final Logger logger = LoggerFactory.getLogger(BallTreeBenchmark.class);
 
     @Setup
     public void setUp() {
@@ -60,14 +68,31 @@ public class BallTreeBenchmark {
         }
         this.vectors = twoDList.stream().map(doubleList -> new ArrayRealVector(doubleList.stream().mapToDouble(Double::doubleValue).toArray())).collect(Collectors.toList());
         target = vectors.get(ThreadLocalRandom.current().nextInt(0, vectors.size()));
-
         ballTree = new BallTree();
         root = ballTree.buildTree(vectors);
+        foundNeighbours = new Knn().knn(this.vectors,6, target);
+
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public void testBallTree() {
-       ballTree.searchTree(root, target, 3);
+        kActualNeighbours = ballTree.searchTree(root, target, 6);
+    }
+
+    private Boolean neighbourIsPresent(double[] array) {
+        return kActualNeighbours.stream().map(RealVector::toArray).anyMatch(arr -> Arrays.equals(array, arr));
+    }
+
+    @TearDown(Level.Trial)
+    public void estimateResult() {
+        logger.info("Search {} neighbours in tree", 6);
+        if (foundNeighbours != null) {
+            double n = foundNeighbours.stream()
+                    .map(RealVector::toArray)
+                    .filter(this::neighbourIsPresent)
+                    .count();
+            logger.info("Found {} out of {} neighbours, which is {} precision", n, 6, n / 6);
+        }
     }
 }

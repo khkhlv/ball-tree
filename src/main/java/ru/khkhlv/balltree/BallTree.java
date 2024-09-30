@@ -33,7 +33,6 @@ public class BallTree {
         return root;
     }
 
-
     public List<RealVector> searchTree(Node root, RealVector targetVector, int k) {
         // ищем ближайших соседей среди векторов
         PriorityQueue<RealVector> nearestNeighbours = new PriorityQueue<>(Comparator.comparingDouble(p-> euclideanDistance(p.toArray(), targetVector.toArray())));
