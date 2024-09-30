@@ -7,8 +7,14 @@ import org.apache.commons.math3.linear.RealVector;
 import java.util.*;
 
 @Getter
-@Setter
 public class BallTree {
+    private final Node root;
+    private final int leafSize;
+
+    public BallTree(Node root, int leafSize) {
+        this.root = root;
+        this.leafSize = leafSize;
+    }
 
     public Node buildTree(List<RealVector> realVectors){
         if(realVectors.isEmpty()){
@@ -16,6 +22,9 @@ public class BallTree {
         }
         if (realVectors.size() == 1){
             return new Node(realVectors.get(0));
+        }
+        if (realVectors.size() <= leafSize) {
+            return null;
         }
 
         realVectors.sort(Comparator.comparingDouble(RealVector::getDimension));
