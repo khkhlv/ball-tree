@@ -48,6 +48,12 @@ public class BallTreeBenchmark {
     private List<RealVector> foundNeighbours;
     private static final Logger logger = LoggerFactory.getLogger(BallTreeBenchmark.class);
 
+    @Param({"1", "5", "10", "100", "1000"})
+    private int leafSize;
+
+    @Param({"100", "1000"})
+    private int k;
+
     @Setup
     public void setUp() {
         String fileName = "src/test/resources/dataset.txt";
@@ -68,16 +74,16 @@ public class BallTreeBenchmark {
         }
         this.vectors = twoDList.stream().map(doubleList -> new ArrayRealVector(doubleList.stream().mapToDouble(Double::doubleValue).toArray())).collect(Collectors.toList());
         target = vectors.get(ThreadLocalRandom.current().nextInt(0, vectors.size()));
-        ballTree = new BallTree();
+        ballTree = new BallTree(root, leafSize);
         root = ballTree.buildTree(vectors);
-        foundNeighbours = new Knn().knn(this.vectors,6, target);
+        foundNeighbours = new Knn().knn(this.vectors,k, target);
 
     }
 
     @Benchmark
-    @BenchmarkMode(Mode.Throughput)
+    @BenchmarkMode(Mode.AverageTime)
     public void testBallTree() {
-        kActualNeighbours = ballTree.searchTree(root, target, 6);
+        kActualNeighbours = ballTree.searchTree(root, target, k);
     }
 
     private Boolean neighbourIsPresent(double[] array) {
@@ -86,13 +92,13 @@ public class BallTreeBenchmark {
 
     @TearDown(Level.Trial)
     public void estimateResult() {
-        logger.info("Search {} neighbours in tree", 6);
+        logger.info("Search {} neighbours in tree", k);
         if (foundNeighbours != null) {
             double n = foundNeighbours.stream()
                     .map(RealVector::toArray)
                     .filter(this::neighbourIsPresent)
                     .count();
-            logger.info("Found {} out of {} neighbours, which is {} precision", n, 6, n / 6);
+            logger.info("Found {} out of {} neighbours, which is {} precision", n, k, n / k);
         }
     }
 }

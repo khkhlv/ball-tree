@@ -57,9 +57,11 @@ public class BallTree {
 
             assert node != null;
             nearestNeighbours.add(node.getRealVector());
+            // Удаляем ближайший вектор, если количество ближайших соседей превысило заданное значение
             if(nearestNeighbours.size() > k) {
                 nearestNeighbours.poll();
             }
+            // Если у узла есть сосед, добавляем его в очередь для посещения
             if(node.getLeftChild() != null){
                 nodesToVisit.add(node.getLeftChild());
             }
